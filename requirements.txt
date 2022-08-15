@@ -1,0 +1,9 @@
+soundfile
+pywavelets
+matplotlib
+numpy
+scipy
+sounddevice
+unsilence
+statsmodels
+pydub
