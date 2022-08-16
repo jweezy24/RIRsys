@@ -29,7 +29,7 @@ def estimate_IR_power_spectrum(x,y, fs=48000):
 
     #Append zeros to the csd array
     S_yx1 = np.concatenate( (S_yx, np.array([0 for i in range(zeros1)]))) 
-    S_yx2 = np.concatenate( (S_yx, np.array([0 for i in range(zeros2)]))) 
+    S_yx2 = np.concatenate( (S_yx, np.array([0.000001 for i in range(zeros2)]))) 
 
     #Estimate transfer function conjugate
     H_conj = S_yx1/S_X
@@ -37,7 +37,7 @@ def estimate_IR_power_spectrum(x,y, fs=48000):
     H = S_Y/S_yx2
 
     #Estimate Impulse response
-    h = normalize(ifft(H).real)
+    h = irfft(H).real
 
     return h
 
@@ -55,9 +55,10 @@ def estimate_IR_kronecker_product(d,x,L):
     chop = abs(L2*L- len(d))
     chop = len(d) - chop
     
+    prod = L2*L
 
-    assert(len(d[:chop]) == L2*L) 
-    assert(len(x[:chop]) == L2*L) 
+    assert(len(d[:chop]) == prod) 
+    assert(len(x[:chop]) == prod) 
     
     d = np.array(np.split(d[:chop],L))
     x = np.array(np.split(x[:chop],L))
@@ -138,8 +139,10 @@ def estimate_IR_kronecker_product(d,x,L):
         minimized_h = sigma**2 - 2*b + a
         
         # Grab weiner iterative weiner filters
-        weiner_filter_i = np.dot(np.linalg.inv(R), p)
-        H_weiner.append(weiner_filter_i)
+        # Removed due to some matrixes having a det of 0
+
+        # weiner_filter_i = np.dot(np.linalg.inv(R), p)
+        # H_weiner.append(weiner_filter_i)
     
     H = np.matrix(H)
 
@@ -153,6 +156,7 @@ def estimate_IR_kronecker_product(d,x,L):
         h2 = np.sqrt(S[i]) * U2[:,i]
         
         #This is so that the array is in the format described in the paper.
+        # Removed so that the final impulse response is 1 dimensional 
         h2 = h2.T
 
         #This conditional is here as an initator for the numpy matrix H_min.
@@ -162,6 +166,7 @@ def estimate_IR_kronecker_product(d,x,L):
         else:
             H_min += np.kron(h1,h2)
 
+    H_min = normalize(H_min)
     
     return H_min  
 
@@ -201,15 +206,28 @@ def estimate_IR_deconvolution(x,y):
     N = nextpow2(L)
 
     #Take ffts of the signals
-    X = fft(x,N)
-    Y = fft(y,N)
+    X = fft(x)
+    Y = fft(y)
 
+    print(len(x))
+    print(len(y))
     # Transfer function estimation
-    H = (Y*Y.conj())/(X*Y.conj())
+    H = Y/X
+    H_tmp = ((Y*Y.conj())/(X*Y.conj()))
 
     #Impulse response
-    h = ifft(H).real
+    h = abs(ifft(H))
+    h_tmp = ifft(H).real
+    diff = abs(h-h_tmp)
 
-    return h
+    print(np.linalg.norm(ifft(H).imag))
+
+    print(np.linalg.norm(h-h_tmp))
+    print(np.max(diff))
+    print(np.min(diff))
+    print(np.average(diff))
+
+
+    return h[:len(x)]
 
 
