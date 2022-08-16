@@ -10,29 +10,36 @@ from numpy.linalg import inv
 # x = input
 # y = output
 # fs = sampling rate of the signal
+# Resource: http://www.ece.tufts.edu/~maivu/ES150/8-lti_psd.pdf
 # Returns a single dimension impulse response estimation H. 
 def estimate_IR_power_spectrum(x,y, fs=48000):
+    #Compute the cross spectrual density of x and y
+    S_yx = sig.csd(x,y,fs=48000)[1]
 
-    S_yx = sig.csd(x,y)[1]
-    S_xx = sig.periodogram(x,fs=fs)[1]
-    S_yy = sig.periodogram(y,fs=fs)[1]
 
-    z1 = len(S_xx) - len(S_yx)
-    z2 = len(S_yy) - len(S_yx)
+    #compute the power spectrual density of x and y
+    S_X = sig.periodogram(x,fs=fs,scaling='density')[1]
+    S_Y = sig.periodogram(y,fs=fs,scaling='density')[1]
 
-    zeros1 = np.zeros(z1)
-    zeros2 = np.zeros(z2)
+    #Need to append zeros to the CSD
 
-    S_yx1 = np.concatenate( (S_yx, zeros1) )
-    S_yx2 = np.concatenate( (S_yx, zeros2) )
+    #These are the differences in length
+    zeros1 = abs(len(S_yx) - len(S_X))
+    zeros2 = abs(len(S_yx) - len(S_Y))
 
-    H_div = (fft(x)*fft(y).conj())/(fft(y)*fft(y).conj())
+    #Append zeros to the csd array
+    S_yx1 = np.concatenate( (S_yx, np.array([0 for i in range(zeros1)]))) 
+    S_yx2 = np.concatenate( (S_yx, np.array([0 for i in range(zeros2)]))) 
 
-    H_1 = S_yx1/S_xx
-    H_2 = S_yy/S_yx1
-    H = (S_yy/S_xx) 
+    #Estimate transfer function conjugate
+    H_conj = S_yx1/S_X
+    #Estimate transfer function
+    H = S_Y/S_yx2
 
-    return H
+    #Estimate Impulse response
+    h = normalize(ifft(H).real)
+
+    return h
 
 
 # d = input
