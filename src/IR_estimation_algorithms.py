@@ -224,4 +224,71 @@ def estimate_IR_deconvolution(x,y):
 
     return h[:len(x)]
 
+# x = input
+# y = output
+# Returns a IR estimation using an iterative filtering idea that I came up with.
+def estimate_IR_iterative_filtering(x,y,window_len=10):
+    
+    #first step is to apply hanning windows of different lengths of the signal and take the ffts of the products.
+    #For this we want to use the input and output.
+    #The input will tell us what the results should look like. The aim here is to build a central fft that emphasizes room components and minimizes noise. Windows lessen the impact of aliasing caused from noise.
+
+    
+    x_split = np.array(np.split(x,window_len))
+    y_split = np.array(np.split(y,window_len))
+    window = scipy.signal.hann( (len(x)//window_len) )
+    
+    x_fft_matrix = []
+    for row in x_split:
+        row = row*window
+        row_fft = normalize(fft(row))
+        if len(x_fft_matrix) == 0:
+            x_fft_matrix = row_fft
+        else:
+            x_fft_matrix = np.vstack( (x_fft_matrix,row_fft) )
+    
+    y_fft_matrix = []
+    for row in y_split:
+        row = row*window
+        row_fft = normalize(fft(row))
+        if len(y_fft_matrix) == 0:
+            y_fft_matrix = row_fft
+        else:
+            y_fft_matrix = np.vstack( (y_fft_matrix,row_fft) )
+    
+    formulated_fft_x = np.array([complex(0) for i in range(len(row_fft))])
+    formulated_fft_y = np.array([complex(0) for i in range(len(row_fft))])
+    for j in range(x_fft_matrix.shape[0]):
+        row_x = x_fft_matrix[j]
+        row_y = y_fft_matrix[j]
+
+        ave_tmp_x = np.average(abs(row_x))
+        ave_tmp_y = np.average(abs(row_y))
+        for k in range(row_x.shape[0]):
+            val_x = row_x[k]
+            val_y = row_y[k]
+
+            min_x = val_x/100
+            min_y = val_y/100
+            if abs(val_x) < ave_tmp_x/2:
+                row_x[k] = min_x
+            
+            if abs(val_y) < ave_tmp_y/2:
+                row_y[k] = min_y
+
+            if row_x[k] == min_x and row_y[k] != min_y:
+                row_y[k] = complex(ave_tmp_y,0)
+                row_x[k] = min_x
+
+        formulated_fft_x += row_x
+        formulated_fft_y += row_y
+
+    formulated_fft_x /= x_fft_matrix.shape[0]
+    formulated_fft_y /= y_fft_matrix.shape[0]
+
+    formulated_fft = (formulated_fft_y*formulated_fft_y.conj())/(formulated_fft_x*formulated_fft_y.conj() + signaltonoise(y)) 
+    # formulated_fft = formulated_fft_y
+
+    return ifft(formulated_fft,len(x)).real
+
 

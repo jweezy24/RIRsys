@@ -662,8 +662,3 @@ def sum_ffts(X,Y,Z,iterator,add=True):
     print(count)
 
     return X,Y,Z
-
-
-
-
-
