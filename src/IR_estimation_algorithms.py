@@ -177,13 +177,13 @@ def estimate_IR_kronecker_product(d,x,L):
 # x = input
 # y = output
 # Returns a IR estimation using weiner deconvolution.
-def estimate_IR_weiner_deconvolution(x,y):
+def estimate_IR_weiner_deconvolution(x_c,y_c):
 
-    x = normalize(x)
-    y = normalize(y)
+    x = x_c.copy()
+    y = y_c.copy()
 
     # Estimate the SNRs of both signals
-    noise_est = signaltonoise(y) + signaltonoise(x)
+    noise_est = signaltonoise(y) # + signaltonoise(x)
 
     # Determine the length of the ffts as a power of 2
     L = len(y) + len(x) -1  # linear convolution length

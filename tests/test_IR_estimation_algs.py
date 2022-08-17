@@ -31,7 +31,7 @@ def simulation_init(signal_length):
         amplitude = random.randint(1,signal_length)
         
 
-        length = np.pi * 2 * cycles
+        length = np.pi * 2 *cycles
 
         range_inputs = np.linspace(0, length, signal_length)
 
@@ -145,8 +145,8 @@ def plot_all_test(tests,plot_ffts=True):
     for ax1,ax2,ax3,ax4 in axs:
         i = tests[count]
         if plot_ffts:
-            IR_est =  abs(rfft(data[f"IR_est_{i}"]))
-            IR =  abs(rfft(data[f"IR_{i}"],len(IR_est)))
+            IR_est =  normalize(abs(rfft(data[f"IR_est_{i}"])))
+            IR =  normalize(abs(rfft(data[f"IR_{i}"],len(IR_est))))
             A = abs(rfft(data["input"]))
             B = abs(rfft(data["output"]))
 
