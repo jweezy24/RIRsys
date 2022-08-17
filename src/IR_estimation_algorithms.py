@@ -14,7 +14,7 @@ from numpy.linalg import inv
 # Returns a single dimension impulse response estimation H. 
 def estimate_IR_power_spectrum(x,y, fs=48000):
     #Compute the cross spectrual density of x and y
-    S_yx = sig.csd(x,y,fs=48000)[1]
+    S_yx = sig.csd(x,y,fs=fs)[1]
 
 
     #compute the power spectrual density of x and y
@@ -37,7 +37,7 @@ def estimate_IR_power_spectrum(x,y, fs=48000):
     H = S_Y/S_yx2
 
     #Estimate Impulse response
-    h = irfft(H).real
+    h = abs(irfft(H))
 
     return h
 
@@ -48,6 +48,9 @@ def estimate_IR_power_spectrum(x,y, fs=48000):
 # Paper for reference: https://ieeexplore.ieee.org/document/8369106
 # Returns a minimal-error IR matrix where each row is a separate impulse. 
 def estimate_IR_kronecker_product(d,x,L):
+
+    d = d.copy()
+    x = x.copy()
 
     #first thing we want to do is break up d and x into L samples
     L = nextpow2(L)
@@ -89,15 +92,15 @@ def estimate_IR_kronecker_product(d,x,L):
             continue
 
         #Calculate ffts for each row
-        X = fft(row_x)
-        D = fft(row_d)
+        X = rfft(row_x)
+        D = rfft(row_d)
 
         #Estimate SNR for each row
         lambd_est_d = signaltonoise(d[i,:]) 
         lambd_est_x = signaltonoise(x[i,:])
 
         #Deconvolve output with input
-        h_i =  np.matrix(ifft( (1/len(row_x)) * ((D * X.conj())/(X* X.conj() + lambd_est_x**2))).real).T
+        h_i =  np.matrix(irfft( (1/len(row_x)) * ((D * X.conj())/(X* X.conj() + lambd_est_x**2))).real).T
 
         #Check for nans, if there are nan values in the resulting matrix calculations will fail.
         if(np.isnan(h_i).any()):
@@ -176,8 +179,11 @@ def estimate_IR_kronecker_product(d,x,L):
 # Returns a IR estimation using weiner deconvolution.
 def estimate_IR_weiner_deconvolution(x,y):
 
+    x = normalize(x)
+    y = normalize(y)
+
     # Estimate the SNRs of both signals
-    noise_est = signaltonoise(y) + signaltonoise(x) 
+    noise_est = signaltonoise(y) + signaltonoise(x)
 
     # Determine the length of the ffts as a power of 2
     L = len(y) + len(x) -1  # linear convolution length
@@ -206,27 +212,15 @@ def estimate_IR_deconvolution(x,y):
     N = nextpow2(L)
 
     #Take ffts of the signals
-    X = fft(x)
-    Y = fft(y)
+    X = rfft(x,N)
+    Y = rfft(y,N)
 
-    print(len(x))
-    print(len(y))
     # Transfer function estimation
-    H = Y/X
-    H_tmp = ((Y*Y.conj())/(X*Y.conj()))
+    H = Y/(X+0.000001)
+    # H = ((Y*Y.conj())/(X*Y.conj()+0.00001))
 
     #Impulse response
-    h = abs(ifft(H))
-    h_tmp = ifft(H).real
-    diff = abs(h-h_tmp)
-
-    print(np.linalg.norm(ifft(H).imag))
-
-    print(np.linalg.norm(h-h_tmp))
-    print(np.max(diff))
-    print(np.min(diff))
-    print(np.average(diff))
-
+    h = abs(irfft(H))
 
     return h[:len(x)]
 

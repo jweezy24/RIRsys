@@ -3,8 +3,8 @@ import scipy
 import sys
 import random
 # Adding the src path to our environment so that the functions can be imported to the tests folder
-sys.path.insert(1, 'src/')
-# sys.path.insert(1, '../src/')
+# sys.path.insert(1, 'src/')
+sys.path.insert(1, '../src/')
 from IR_estimation_algorithms import *
 
 import numpy as np
@@ -12,7 +12,7 @@ import numpy as np
 data = {}
 
 def simulation_init(signal_length):
-    system = scipy.signal.lti([1, 0], [1,2])
+    system = scipy.signal.lti([0.15,0.55], [0.5,0.18], 18)
 
     # Setting length for starting sine signal
     length = np.pi * 2
@@ -28,7 +28,7 @@ def simulation_init(signal_length):
         cycles = random.randint(1,signal_length)
 
         #Amplitude of the pure sine wave
-        amplitude = random.randint(1,5)
+        amplitude = random.randint(1,signal_length)
         
 
         length = np.pi * 2 * cycles
@@ -40,7 +40,7 @@ def simulation_init(signal_length):
 
 
         # Convolve tmp signal with input signal
-        input_signal = normalize(scipy.signal.fftconvolve(input_signal,tmp_signal,'same'))
+        input_signal = normalize(scipy.signal.fftconvolve(input_signal,tmp_signal,'full'))
     
     # input_signal = normalize(input_signal)
     
@@ -149,21 +149,41 @@ def plot_all_test(tests,plot_ffts=True):
             IR =  abs(rfft(data[f"IR_{i}"],len(IR_est)))
             A = abs(rfft(data["input"]))
             B = abs(rfft(data["output"]))
+
+            ax1.plot(np.arange(0,len(IR)), IR_est[:len(IR)])
+            ax1.set_yscale("log")
+            ax1.set_title("IR Estimate fft")
+            ax2.plot(np.arange(0,len(IR)), IR)
+            ax2.set_yscale("log")
+            ax2.set_title("Actual IR fft")
+            ax3.plot(np.arange(0,len(A)), A)
+            ax3.set_yscale("log")
+            ax3.set_title("fft of Input Values")
+            ax4.plot(np.arange(0,len(B)), B )
+            ax4.set_yscale("log")
+            ax4.set_title("fft of Output Values")
+            count+=1
+
+            d1 = scipy.spatial.distance.cosine(IR,IR_est[:len(IR)])
+            print(d1)
+
         else:
             IR_est =  data[f"IR_est_{i}"]
-            IR =  data[f"IR_{i}"]
+            IR =  abs(data[f"IR_{i}"])
             A = data["input"]
             B = data["output"]
 
-        ax1.plot(np.arange(0,len(IR)), IR_est[:len(IR)])
-        ax1.set_title("IR Estimate fft")
-        ax2.plot(np.arange(0,len(IR)), IR)
-        ax2.set_title("Actual IR fft")
-        ax3.plot(np.arange(0,len(A)), A)
-        ax3.set_title("fft of Input Values")
-        ax4.plot(np.arange(0,len(B)), B )
-        ax4.set_title("fft of Output Values")
-        count+=1
+            ax1.plot(np.arange(0,len(IR)), IR_est[:len(IR)])
+            ax1.set_title("IR Estimate Time")
+            ax2.plot(np.arange(0,len(IR)), IR)
+            ax2.set_title("Actual IR Time")
+            ax3.plot(np.arange(0,len(A)), A)
+            ax3.set_title("Input Values in Time")
+            ax4.plot(np.arange(0,len(B)), B )
+            ax4.set_title("Output Values in Time")
+            count+=1
+            d1 = scipy.spatial.distance.cosine(IR,IR_est[:len(IR)])
+            print(d1)
 
     plt.show()
 
@@ -180,6 +200,6 @@ if __name__ == '__main__':
 
     
     print(system)
-    tests = ["decon", "decon_w","power","kronecker"]
+    tests = ["decon", "decon_w","power"]
     plot_all_test(tests)
 
