@@ -294,7 +294,7 @@ def saverecording(RIR, RIRtoSave, testsignal, recorded, fs,multi=False,ind=1,dir
 
         print('Success! Recording saved in directory ' + dirname)
 
-def shift_samples(orig, recorded,full_recording,use_pearson=False, start=50000,stop=100000,est_delay=5000):
+def shift_samples(orig, recorded,full_recording,use_pearson=False, start=50000,stop=100000,est_delay=8000):
     correlations = []
     index = 0
     step = -1

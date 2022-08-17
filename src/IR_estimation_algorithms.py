@@ -220,7 +220,7 @@ def estimate_IR_deconvolution(x,y):
     # H = ((Y*Y.conj())/(X*Y.conj()+0.00001))
 
     #Impulse response
-    h = abs(irfft(H))
+    h = irfft(H).real
 
     return h[:len(x)]
 
