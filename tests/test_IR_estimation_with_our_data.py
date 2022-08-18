@@ -25,7 +25,7 @@ parser.add_argument('--original_audio', help='Path to a untainted wav file that 
 parser.add_argument('--align_buffers', action='store_true', help="Argument that specifies if the data is aligned or not. Default value is false and the code will align the buffer." )
 args = vars(parser.parse_args())
 
-def data_init(r1,r2,r3,orig,chop_silence=True):
+def data_init(r1,r2,r3,orig,chop_silence=False):
 
     r1 = get_raw_audio_stream(r1)[1]
     r2 = get_raw_audio_stream(r2)[1]
@@ -154,7 +154,7 @@ def suite():
     # suite.addTest(Test_IR_Algorithms('test_eval_kronecker_product'))
     return suite
 
-def plot_all_test(tests,plot_ffts=False):
+def plot_all_test(tests,plot_ffts=True):
     
     import matplotlib.pyplot as plt
     fig, axs = plt.subplots(nrows=len(tests), ncols=5, figsize=(18, 5))
@@ -230,9 +230,13 @@ def compare_bit_streams(tests):
         # IR_est_2 =  convolution( public_audio, data[f"IR_est_{i}_2"])
         # IR_est_3 =  convolution( public_audio, data[f"IR_est_{i}_3"])
 
-        IR_est_1 =  data[f"IR_est_{i}_1"]
-        IR_est_2 =  data[f"IR_est_{i}_2"]
-        IR_est_3 =  data[f"IR_est_{i}_3"]
+        # IR_est_1 =  data[f"IR_est_{i}_1"]
+        # IR_est_2 =  data[f"IR_est_{i}_2"]
+        # IR_est_3 =  data[f"IR_est_{i}_3"]
+
+        IR_est_1 =  abs(rfft(data[f"IR_est_{i}_1"]))
+        IR_est_2 =  abs(rfft(data[f"IR_est_{i}_2"]))
+        IR_est_3 =  abs(rfft(data[f"IR_est_{i}_3"]))
 
         bw = base_sine_wave(np.arange(0,len(IR_est_1)))
 

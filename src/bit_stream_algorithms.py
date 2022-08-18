@@ -236,20 +236,20 @@ def create_bit_streams_audio(x1,window_len=10000, bands=1000):
     wind = scipy.signal.windows.hann(window_len)
     for i in range(0,len(x),window_len):
         
-        if len(x[i:i+window_len]) < window_len:
-            wind = scipy.signal.windows.hann(len(x[i:i+window_len]))
-            x[i:i+window_len] = x[i:i+window_len] * wind
+        if len(x[i:i+window_len-1]) < window_len:
+            wind = scipy.signal.windows.hann(len(x[i:i+window_len-1]))
+            x[i:i+window_len-1] = x[i:i+window_len-1] * wind
         else:
-            x[i:i+window_len] = x[i:i+window_len] * wind
+            x[i:i+window_len-1] = x[i:i+window_len-1] * wind
 
-        FFTs.append(abs(rfft(x[i:i+window_len])))
+        FFTs.append(abs(rfft(x[i:i+window_len-1])))
  
   
     E = {}
     bands_lst = []
     for i in range(0,len(FFTs)):
         frame = FFTs[i]
-        bands_lst.append([ frame[k:k+bands] for k in range(0,len(frame),bands)])
+        bands_lst.append([ frame[k:k+bands-1] for k in range(0,len(frame),bands)])
         for j in range(0,len(bands_lst[i])):
             E[(i,j)] = np.sum(bands_lst[i][j])
 
@@ -264,7 +264,7 @@ def create_bit_streams_audio(x1,window_len=10000, bands=1000):
     
     return bs
 
-def bit_agreement_ambient_audio_scheme(x,y,window_len=100, bands=20):
+def bit_agreement_ambient_audio_scheme(x,y,window_len=100, bands=25):
     FFTs = []
     from scipy.fft import fft, fftfreq, ifft, rfft, irfft
 
