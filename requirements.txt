@@ -7,3 +7,4 @@ sounddevice
 unsilence
 statsmodels
 pydub
+sklearn

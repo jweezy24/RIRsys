@@ -264,7 +264,7 @@ def create_bit_streams_audio(x1,window_len=10000, bands=1000):
     
     return bs
 
-def bit_agreement_ambient_audio_scheme(x,y,window_len=100, bands=25):
+def bit_agreement_ambient_audio_scheme(x,y,window_len=100, bands=10):
     FFTs = []
     from scipy.fft import fft, fftfreq, ifft, rfft, irfft
 

@@ -235,16 +235,19 @@ def estimate_IR_iterative_filtering(x,y,window_len=10):
 
     xy = estimate_IR_weiner_deconvolution(x,y)
 
+
     
     x_split = np.array(np.split(x,window_len))
     y_split = np.array(np.split(y,window_len))
     xy_split = np.array(np.split(xy,window_len))
     window = scipy.signal.hann( (len(x)//window_len) )
     
+    N = nextpow2((len(x)//window_len))
+
     x_fft_matrix = []
     for row in x_split:
-        row = row*window
-        row_fft = normalize(fft(row))
+        row = row
+        row_fft = fft(row,N)
         if len(x_fft_matrix) == 0:
             x_fft_matrix = row_fft
         else:
@@ -252,17 +255,17 @@ def estimate_IR_iterative_filtering(x,y,window_len=10):
     
     y_fft_matrix = []
     for row in y_split:
-        row = row*window
-        row_fft = normalize(fft(row))
+        row = scipy.signal.wiener(row)
+        row_fft = fft(row,N)
         if len(y_fft_matrix) == 0:
             y_fft_matrix = row_fft
         else:
             y_fft_matrix = np.vstack( (y_fft_matrix,row_fft) )
     
     xy_fft_matrix = []
-    for row in y_split:
-        row = row*window
-        row_fft = normalize(fft(row))
+    for row in xy_split:
+        row = scipy.signal.wiener(row)
+        row_fft = fft(row,N)
         if len(xy_fft_matrix) == 0:
             xy_fft_matrix = row_fft
         else:
@@ -281,33 +284,42 @@ def estimate_IR_iterative_filtering(x,y,window_len=10):
         ave_tmp_y = np.average(abs(row_y))
         ave_tmp_xy = np.average(abs(row_xy))
 
-        for k in range(len(row_xy)):
-            val_xy = row_xy[k]
-            val_x = row_x[k]
+        
+        c1 = 0
+        c2 = 0
+        c3 = 0
+        if row_x.real.all() != np.nan and row_y.real.all() != np.nan:
+            for k in range(len(row_xy)):
+                val_y = row_y[k]
+                val_x = row_x[k]
 
-            if abs(val_xy) < ave_tmp_xy and abs(val_x) > ave_tmp_x:
-                row_xy[k] = val_xy/1000
+                a = val_x.real 
+                b = val_y.real
 
-            elif abs(val_xy) > ave_tmp_xy and abs(val_x) < ave_tmp_x:
-                row_xy[k] = val_xy**2
+                if b > a:
+                    row_y[k] = complex( abs(val_y.real)*2, val_y.imag)
+                    c1+=1 
+                elif b <= a:
+                    row_y[k] = complex(-val_y.real,-val_y.imag)
+                    c2+=1
+                c3+=1
+        
+            print(c1,c2)
+                
 
-            elif abs(val_xy) < ave_tmp_xy and abs(val_x) < ave_tmp_x:
-                row_xy[k] = 0
+            # formulated_fft_xy += row_xy
+            formulated_fft_y += row_y
+            formulated_fft_x += row_x
 
-            
-            
-
-        formulated_fft_xy += row_xy
-
-    # formulated_fft_x /= x_fft_matrix.shape[0]
-    # formulated_fft_y /= y_fft_matrix.shape[0]
+    formulated_fft_x /= c3#x_fft_matrix.shape[0]
+    formulated_fft_y /= c3#y_fft_matrix.shape[0]
     formulated_fft_xy /= xy_fft_matrix.shape[0]
 
-    # formulated_fft = (formulated_fft_y*formulated_fft_y.conj())/(formulated_fft_x*formulated_fft_y.conj() + signaltonoise(y)) 
+    formulated_fft = normalize((formulated_fft_y)/(formulated_fft_x)) 
 
     # formulated_fft = formulated_fft_y
 
-    formulated_fft = formulated_fft_xy
+    # formulated_fft = formulated_fft_xy
 
     return ifft(formulated_fft).real
 

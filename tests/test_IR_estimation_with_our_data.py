@@ -223,30 +223,31 @@ def compare_bit_streams(tests):
     tests = ["wind"]
     fig, axs = plt.subplots(nrows=1, ncols=len(tests), figsize=(18, 5))
     count = 0
-    public_audio = get_raw_audio_stream("/home/jweezy/Documents/ambient_audio_experiments/audio_dataset/Isaac_data/white_noise_10.wav")[1]
+    public_audio = get_raw_audio_stream("/home/jweezy/Drive2/Drive2/Code/ambient_audio_experiments/audio_dataset/Isaac_data/white_noise_10.wav")[1]
 
     for i in tests:
         # IR_est_1 =  convolution( public_audio, data[f"IR_est_{i}_1"])
         # IR_est_2 =  convolution( public_audio, data[f"IR_est_{i}_2"])
         # IR_est_3 =  convolution( public_audio, data[f"IR_est_{i}_3"])
 
-        # IR_est_1 =  data[f"IR_est_{i}_1"]
-        # IR_est_2 =  data[f"IR_est_{i}_2"]
-        # IR_est_3 =  data[f"IR_est_{i}_3"]
+        IR_est_1 =  data[f"IR_est_{i}_1"]
+        IR_est_2 =  data[f"IR_est_{i}_2"]
+        IR_est_3 =  data[f"IR_est_{i}_3"]
 
-        IR_est_1 =  abs(rfft(data[f"IR_est_{i}_1"]))
-        IR_est_2 =  abs(rfft(data[f"IR_est_{i}_2"]))
-        IR_est_3 =  abs(rfft(data[f"IR_est_{i}_3"]))
+        # IR_est_1 =  rfft(data[f"IR_est_{i}_1"]).real
+        # IR_est_2 =  rfft(data[f"IR_est_{i}_2"]).real
+        # IR_est_3 =  rfft(data[f"IR_est_{i}_3"]).real
 
-        bw = base_sine_wave(np.arange(0,len(IR_est_1)))
+        # bw = base_sine_wave(np.arange(0,len(IR_est_1)))
+        bw = public_audio[:len(IR_est_1)]
 
-        agreement_1 = bit_agreement_cosine_distance(IR_est_1,IR_est_2,bw)
-        agreement_2 = bit_agreement_cosine_distance(IR_est_1,IR_est_3,bw)
-        agreement_3 = bit_agreement_cosine_distance(IR_est_3,IR_est_2,bw)
+        # agreement_1 = bit_agreement_cosine_distance(IR_est_1,IR_est_2,bw)
+        # agreement_2 = bit_agreement_cosine_distance(IR_est_1,IR_est_3,bw)
+        # agreement_3 = bit_agreement_cosine_distance(IR_est_3,IR_est_2,bw)
 
-        # agreement_1 = bit_agreement_ambient_audio_scheme(IR_est_1,IR_est_2)
-        # agreement_2 = bit_agreement_ambient_audio_scheme(IR_est_1,IR_est_3)
-        # agreement_3 = bit_agreement_ambient_audio_scheme(IR_est_3,IR_est_2)
+        agreement_1 = bit_agreement_ambient_audio_scheme(IR_est_1,IR_est_2)
+        agreement_2 = bit_agreement_ambient_audio_scheme(IR_est_1,IR_est_3)
+        agreement_3 = bit_agreement_ambient_audio_scheme(IR_est_3,IR_est_2)
 
 
         ax_tmp = axs
