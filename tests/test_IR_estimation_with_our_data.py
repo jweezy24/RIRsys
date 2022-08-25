@@ -25,7 +25,7 @@ parser.add_argument('--original_audio', help='Path to a untainted wav file that 
 parser.add_argument('--align_buffers', action='store_true', help="Argument that specifies if the data is aligned or not. Default value is false and the code will align the buffer." )
 args = vars(parser.parse_args())
 
-def data_init(r1,r2,r3,orig,chop_silence=False):
+def data_init(r1,r2,r3,orig,chop_silence=True):
 
     r1 = get_raw_audio_stream(r1)[1]
     r2 = get_raw_audio_stream(r2)[1]
@@ -39,10 +39,10 @@ def data_init(r1,r2,r3,orig,chop_silence=False):
     aligned_buffer_r3 = shift_samples(orig,r3,r3,start=start,stop=stop)
 
     if chop_silence:
-        aligned_buffer_r1 = aligned_buffer_r1[48000*2:48000*5]
-        aligned_buffer_r2 = aligned_buffer_r2[48000*2:48000*5]
-        aligned_buffer_r3 = aligned_buffer_r3[48000*2:48000*5]
-        orig = orig[48000*2:48000*5]
+        aligned_buffer_r1 = aligned_buffer_r1[48000*2:len(aligned_buffer_r1)-48000*2]
+        aligned_buffer_r2 = aligned_buffer_r2[48000*2:len(aligned_buffer_r2)-48000*2]
+        aligned_buffer_r3 = aligned_buffer_r3[48000*2:len(aligned_buffer_r3)-48000*2]
+        orig = orig[48000*2:len(orig)-48000*2]
 
 
     return aligned_buffer_r1,aligned_buffer_r2,aligned_buffer_r3,orig
@@ -154,7 +154,7 @@ def suite():
     # suite.addTest(Test_IR_Algorithms('test_eval_kronecker_product'))
     return suite
 
-def plot_all_test(tests,plot_ffts=True):
+def plot_all_test(tests,plot_ffts=True,windowed_cosine_distance=False):
     
     import matplotlib.pyplot as plt
     fig, axs = plt.subplots(nrows=len(tests), ncols=5, figsize=(18, 5))
@@ -182,13 +182,26 @@ def plot_all_test(tests,plot_ffts=True):
             ax4.set_title("Original fft of audio")
             count+=1
 
-            d1 = scipy.spatial.distance.cosine(IR_est_1,IR_est_2)
-            d2 = scipy.spatial.distance.cosine(IR_est_2,IR_est_3)
-            d3 = scipy.spatial.distance.cosine(IR_est_3,IR_est_1)
+            if windowed_cosine_distance:
+                win = 8
+                cd1 = windowed_cosine_distance_calculation(IR_est_1, IR_est_2, win)
 
-            x=[1,2,3]
-            y=[d1,d2,d3]
-            ax5.bar(x,y,0.2)
+                cd2 = windowed_cosine_distance_calculation(IR_est_2, IR_est_3, win)
+
+                cd3 = windowed_cosine_distance_calculation(IR_est_3, IR_est_1, win)
+
+                ax5.plot(np.arange(len(cd1)), cd1)
+                ax5.plot(np.arange(len(cd1)), cd2)
+                ax5.plot(np.arange(len(cd1)), cd3)
+
+            else:
+                d1 = scipy.spatial.distance.cosine(IR_est_1,IR_est_2)
+                d2 = scipy.spatial.distance.cosine(IR_est_2,IR_est_3)
+                d3 = scipy.spatial.distance.cosine(IR_est_3,IR_est_1)
+
+                x=[1,2,3]
+                y=[d1,d2,d3]
+                ax5.bar(x,y,0.2)
             
 
 
@@ -208,22 +221,35 @@ def plot_all_test(tests,plot_ffts=True):
             ax4.set_title("Original audio")
             count+=1
 
-            d1 = scipy.spatial.distance.cosine(IR_est_1,IR_est_2)
-            d2 = scipy.spatial.distance.cosine(IR_est_2,IR_est_3)
-            d3 = scipy.spatial.distance.cosine(IR_est_3,IR_est_1)
+            if windowed_cosine_distance:
+                win = 8
+                cd1 = windowed_cosine_distance_calculation(IR_est_1, IR_est_2, win)
 
-            x=[1,2,3]
-            y=[d1,d2,d3]
-            ax5.bar(x,y,0.2)
+                cd2 = windowed_cosine_distance_calculation(IR_est_2, IR_est_3, win)
+
+                cd3 = windowed_cosine_distance_calculation(IR_est_3, IR_est_1, win)
+
+                ax5.plot(np.arange(len(cd1)), cd3)
+                ax5.plot(np.arange(len(cd1)), cd2)
+                ax5.plot(np.arange(len(cd1)), cd1)
+
+            else:
+                d1 = scipy.spatial.distance.cosine(IR_est_1,IR_est_2)
+                d2 = scipy.spatial.distance.cosine(IR_est_2,IR_est_3)
+                d3 = scipy.spatial.distance.cosine(IR_est_3,IR_est_1)
+
+                x=[1,2,3]
+                y=[d1,d2,d3]
+                ax5.bar(x,y,0.2)
 
     plt.show()
 
 def compare_bit_streams(tests):
     import matplotlib.pyplot as plt
     tests = ["wind"]
-    fig, axs = plt.subplots(nrows=1, ncols=len(tests), figsize=(18, 5))
+    fig, (ax1,ax2,ax3) = plt.subplots(nrows=1, ncols=3, figsize=(18, 5))
     count = 0
-    public_audio = get_raw_audio_stream("/home/jweezy/Drive2/Drive2/Code/ambient_audio_experiments/audio_dataset/Isaac_data/white_noise_10.wav")[1]
+    public_audio = get_raw_audio_stream("/home/jweezy/Documents/ambient_audio_experiments/audio_dataset/Isaac_data/white_noise_10.wav")[1]
 
     for i in tests:
         # IR_est_1 =  convolution( public_audio, data[f"IR_est_{i}_1"])
@@ -241,21 +267,31 @@ def compare_bit_streams(tests):
         # bw = base_sine_wave(np.arange(0,len(IR_est_1)))
         bw = public_audio[:len(IR_est_1)]
 
-        # agreement_1 = bit_agreement_cosine_distance(IR_est_1,IR_est_2,bw)
-        # agreement_2 = bit_agreement_cosine_distance(IR_est_1,IR_est_3,bw)
-        # agreement_3 = bit_agreement_cosine_distance(IR_est_3,IR_est_2,bw)
+        agreement_11 = bit_agreement_cosine_distance(IR_est_1,IR_est_2,bw)
+        agreement_21 = bit_agreement_cosine_distance(IR_est_1,IR_est_3,bw)
+        agreement_31 = bit_agreement_cosine_distance(IR_est_3,IR_est_2,bw)
 
-        agreement_1 = bit_agreement_ambient_audio_scheme(IR_est_1,IR_est_2)
-        agreement_2 = bit_agreement_ambient_audio_scheme(IR_est_1,IR_est_3)
-        agreement_3 = bit_agreement_ambient_audio_scheme(IR_est_3,IR_est_2)
+        agreement_12 = bit_agreement_ambient_audio_scheme(IR_est_1,IR_est_2)
+        agreement_22 = bit_agreement_ambient_audio_scheme(IR_est_1,IR_est_3)
+        agreement_32 = bit_agreement_ambient_audio_scheme(IR_est_3,IR_est_2)
 
+        agreement_13 = quam_bit_agreement(IR_est_1,IR_est_2)
+        agreement_23 = quam_bit_agreement(IR_est_1,IR_est_3)
+        agreement_33 = quam_bit_agreement(IR_est_3,IR_est_2)
 
-        ax_tmp = axs
         
-        y = [agreement_1,agreement_2,agreement_3]
+        y = [agreement_11,agreement_21,agreement_31]
         x = [1,2,3]
-        ax_tmp.bar(x,y)
+        ax1.bar(x,y)
+        y = [agreement_12,agreement_22,agreement_32]
+        x = [1,2,3]
+        ax2.bar(x,y)
+        y = [agreement_13,agreement_23,agreement_33]
+        x = [1,2,3]
+        ax3.bar(x,y)
         count+=1
+
+
     
     plt.show()
 

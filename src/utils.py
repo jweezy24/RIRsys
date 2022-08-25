@@ -294,7 +294,7 @@ def saverecording(RIR, RIRtoSave, testsignal, recorded, fs,multi=False,ind=1,dir
 
         print('Success! Recording saved in directory ' + dirname)
 
-def shift_samples(orig, recorded,full_recording,use_pearson=False, start=50000,stop=100000,est_delay=8000):
+def shift_samples(orig, recorded,full_recording,use_pearson=False, start=50000,stop=100000,est_delay=7000):
     correlations = []
     index = 0
     step = -1
@@ -302,7 +302,7 @@ def shift_samples(orig, recorded,full_recording,use_pearson=False, start=50000,s
     s = np.array([0 for i in range(1000)])
     tmp_roll2 = np.concatenate((s, tmp_roll[start-est_delay:stop-est_delay]))
     tmp_original = np.concatenate((s, orig[start:stop]))
-    for i in range(0,15000):
+    for i in range(0,13000):
         
         tmp_roll2 = np.roll(tmp_roll2,step)
         
@@ -662,3 +662,18 @@ def sum_ffts(X,Y,Z,iterator,add=True):
     print(count)
 
     return X,Y,Z
+
+
+def windowed_cosine_distance_calculation(x,y,window_len):
+    chop = len(x) -  len(x)%window_len
+    
+
+    xsplit = np.split( x[:chop],window_len )
+    ysplit = np.split( y[:chop],window_len )
+
+    cosine_distances = []
+    for i in range(len(xsplit)):
+        d = scipy.spatial.distance.cosine(xsplit[i],ysplit[i])
+        cosine_distances.append(d)
+
+    return cosine_distances

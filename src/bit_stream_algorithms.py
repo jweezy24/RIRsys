@@ -185,7 +185,7 @@ def integral_bit_agreement(x,y,start=100,end=200):
 def base_sine_wave(x):
     return np.sin(x) + np.random.normal(scale=0.1, size=len(x))
 
-def bit_agreement_cosine_distance(x,y,base_wave,step=100):
+def bit_agreement_cosine_distance(x,y,base_wave,step=10):
     from scipy.spatial.distance import cosine
     from sklearn.metrics.pairwise import cosine_similarity,cosine_distances
 
@@ -196,9 +196,9 @@ def bit_agreement_cosine_distance(x,y,base_wave,step=100):
     b = cosine(y,base_wave)
 
     for i in range(0,int(len(x)),step):
-        tmp_x = x[i:(i)+step]
-        tmp_y = y[i:i+step]
-        tmp_base = base_wave[i:i+step]
+        tmp_x = x[i:(i)+step-1]
+        tmp_y = y[i:i+step-1]
+        tmp_base = base_wave[i:i+step-1]
         a_tmp = cosine(tmp_x,tmp_base)
         b_tmp = cosine(tmp_y,tmp_base)
 
@@ -352,4 +352,89 @@ def bit_agreement_wavelet_transform_algorithm(x,y,window_len=256, spec_plot=Fals
     if matching == 0:
         return 0
     else:
+
         return matching/len(bs1)
+
+
+def quam_bit_generation(X,window=5):
+    x_axis = []
+    y_axis = []
+
+    bs1 = ""
+    count = 0
+    i=1
+    j=1
+    for val in X:
+        if count > 0 and count%window == 0:
+
+            if i > 0 and j > 0:
+                bs1+="10"
+            elif i < 0 and j > 0:
+                bs1 += "00"
+            elif i > 0 and j <0:
+                bs1 += "11"
+            elif i < 0 and j < 0:
+                bs1 += "01"
+            
+            i = val.real
+            j = val.imag
+        else:
+            i *= val.real
+            j *= val.imag
+        count+=1
+
+
+    return bs1
+
+def quam_bit_generation_1d(X):
+    import math
+    bs1 = ""
+
+    for val in X:
+        i = val
+
+        if math.floor(i*100000)%2 == 0 :
+            bs1+="0"
+        else:
+            bs1+="1"
+
+
+    return bs1
+
+def quam_bit_agreement(x,y):
+    from scipy.fft import fft, fftfreq, ifft, rfft, irfft
+
+    X = rfft(x)
+    Y = rfft(y)
+
+    bs1 = quam_bit_generation(X)
+    bs2 = quam_bit_generation(Y)
+
+    # bs1 = quam_bit_generation_1d(abs(X))
+    # bs2 = quam_bit_generation_1d(abs(Y))
+
+    if len(bs1) != len(bs2):
+        return 0
+    
+    matching = 0
+    for i in range(len(bs1)):
+        b1 = bs1[i]
+        b2 = bs2[i]
+        if b1 == b2:
+            matching+=1
+    
+    agreement = matching/len(bs1)
+
+
+    if matching == 0:
+        agreement = 0
+    else:
+        agreement = matching/len(bs1)
+
+    if bs1 == '' or bs2 == '':
+        return 0
+    else:
+        print(bin(int(bs1,2) ^ int(bs2,2)))
+    
+    
+    return agreement

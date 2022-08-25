@@ -194,12 +194,12 @@ def estimate_IR_weiner_deconvolution(x_c,y_c):
     Y = rfft(y,N)
 
     # Transfer function estimation
-    H = ((Y*Y.conj())/(X*Y.conj() + noise_est**2))
+    H = ((Y*X.conj())/(X*X.conj() + noise_est**2))
 
     #Impulse response
     h = irfft(H).real
 
-    return h[:len(x)]
+    return h
 
 
 # x = input
@@ -216,8 +216,8 @@ def estimate_IR_deconvolution(x,y):
     Y = rfft(y,N)
 
     # Transfer function estimation
-    H = Y/(X+0.000001)
-    # H = ((Y*Y.conj())/(X*Y.conj()+0.00001))
+    # H = Y/(X+0.000001)
+    H = ((Y*X.conj())/(X*X.conj()+0.00001))
 
     #Impulse response
     h = irfft(H).real
@@ -228,6 +228,12 @@ def estimate_IR_deconvolution(x,y):
 # y = output
 # Returns a IR estimation using an iterative filtering idea that I came up with.
 def estimate_IR_iterative_filtering(x,y,window_len=10):
+
+    def get_theta(x,y):
+        if y == 0:
+            return 0
+        else:
+            return (180*np.arctan(x/y))/np.pi
     
     #first step is to apply hanning windows of different lengths of the signal and take the ffts of the products.
     #For this we want to use the input and output.
@@ -236,18 +242,19 @@ def estimate_IR_iterative_filtering(x,y,window_len=10):
     xy = estimate_IR_weiner_deconvolution(x,y)
 
 
+    chop = len(x) - len(x)%window_len
     
-    x_split = np.array(np.split(x,window_len))
-    y_split = np.array(np.split(y,window_len))
-    xy_split = np.array(np.split(xy,window_len))
-    window = scipy.signal.hann( (len(x)//window_len) )
+    x_split = np.array(np.split(x[:chop],window_len))
+    y_split = np.array(np.split(y[:chop],window_len))
+    xy_split = np.array(np.split(xy[:chop],window_len))
+    window = scipy.signal.hann( (len(x[:chop])//window_len) )
     
-    N = nextpow2((len(x)//window_len))
+    N = nextpow2((len(x[:chop])//window_len))
 
     x_fft_matrix = []
     for row in x_split:
-        row = row
-        row_fft = fft(row,N)
+        row = row*window
+        row_fft = rfft(row,N)
         if len(x_fft_matrix) == 0:
             x_fft_matrix = row_fft
         else:
@@ -255,8 +262,8 @@ def estimate_IR_iterative_filtering(x,y,window_len=10):
     
     y_fft_matrix = []
     for row in y_split:
-        row = scipy.signal.wiener(row)
-        row_fft = fft(row,N)
+        row = row*window
+        row_fft = rfft(row,N)
         if len(y_fft_matrix) == 0:
             y_fft_matrix = row_fft
         else:
@@ -264,8 +271,8 @@ def estimate_IR_iterative_filtering(x,y,window_len=10):
     
     xy_fft_matrix = []
     for row in xy_split:
-        row = scipy.signal.wiener(row)
-        row_fft = fft(row,N)
+        row = row*window
+        row_fft = rfft(row,N)
         if len(xy_fft_matrix) == 0:
             xy_fft_matrix = row_fft
         else:
@@ -280,47 +287,43 @@ def estimate_IR_iterative_filtering(x,y,window_len=10):
         row_y = y_fft_matrix[j]
         row_xy = xy_fft_matrix[j]
 
-        ave_tmp_x = np.average(abs(row_x))
-        ave_tmp_y = np.average(abs(row_y))
-        ave_tmp_xy = np.average(abs(row_xy))
+        comp_array = abs(row_y / (row_x+signaltonoise(y)**2))
 
-        
-        c1 = 0
-        c2 = 0
-        c3 = 0
-        if row_x.real.all() != np.nan and row_y.real.all() != np.nan:
-            for k in range(len(row_xy)):
-                val_y = row_y[k]
-                val_x = row_x[k]
+        mean = np.mean(comp_array)
 
-                a = val_x.real 
-                b = val_y.real
+        standard_deviation = np.std(comp_array)
 
-                if b > a:
-                    row_y[k] = complex( abs(val_y.real)*2, val_y.imag)
-                    c1+=1 
-                elif b <= a:
-                    row_y[k] = complex(-val_y.real,-val_y.imag)
-                    c2+=1
-                c3+=1
-        
-            print(c1,c2)
-                
+        distance_from_mean = abs( comp_array - mean)
 
-            # formulated_fft_xy += row_xy
-            formulated_fft_y += row_y
-            formulated_fft_x += row_x
+        max_deviations = 4
 
-    formulated_fft_x /= c3#x_fft_matrix.shape[0]
-    formulated_fft_y /= c3#y_fft_matrix.shape[0]
+        for count in range(len(distance_from_mean)):
+            ind = distance_from_mean[count]
+            if ind > max_deviations * standard_deviation:
+                row_y[count] = 100
+                row_x[count] = 0
+            else:
+                row_y[count] = 0
+                row_x[count] = 1
+
+        # plt.plot(np.arange(len(tmp)),abs(tmp))
+        # plt.show()
+
+
+        formulated_fft_y += row_y
+        formulated_fft_x += row_x
+        formulated_fft_xy += row_xy
+
+    formulated_fft_x /= x_fft_matrix.shape[0]
+    formulated_fft_y /= y_fft_matrix.shape[0]
     formulated_fft_xy /= xy_fft_matrix.shape[0]
 
-    formulated_fft = normalize((formulated_fft_y)/(formulated_fft_x)) 
+    formulated_fft = (formulated_fft_y*formulated_fft_y.conj())/(formulated_fft_x*formulated_fft_y.conj() + signaltonoise(y)**2) 
 
     # formulated_fft = formulated_fft_y
 
     # formulated_fft = formulated_fft_xy
 
-    return ifft(formulated_fft).real
+    return irfft(formulated_fft).real
 
 
