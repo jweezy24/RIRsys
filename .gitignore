@@ -132,3 +132,6 @@ dmypy.json
 # Virtual Environment Ignores
 RIRsys
 .vscode
+audio_datasets
+tests/data_cache
+experimentation
