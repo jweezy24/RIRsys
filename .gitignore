@@ -133,3 +133,5 @@ dmypy.json
 RIRsys
 .vscode
 audio_datasets
+tests/data_cache
+experimentation

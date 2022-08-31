@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import pickle
 import sys
 import math
+import pywt
 
 
 def normalize(v):
@@ -33,11 +34,15 @@ def get_raw_audio_stream(path,scale=False):
         data,freq = soundfile.read(path)
         data = normalize(data).transpose()
         if len(data.shape) > 1:
-            data = data[:,1]
+            for i in range(1,data.shape[1]):
+                data[:,0] += data[:,i]
+            data = data[:,0]/data.shape[1]
     else:
         data,freq = soundfile.read(path)
         if len(data.shape) > 1:
-            data = data[:,1]
+            for i in range(1,data.shape[1]):
+                data[:,0] += data[:,i]
+            data = data[:,0]/data.shape[1]
     
     return (freq,np.array(data))
 
@@ -677,3 +682,105 @@ def windowed_cosine_distance_calculation(x,y,window_len):
         cosine_distances.append(d)
 
     return cosine_distances
+
+
+def dwt_analysis(data,rooms):
+    from math import log2,ceil
+
+    local_data = {}
+
+    for room in rooms:
+        tmp = data[room]
+        for key in tmp.keys():
+            fs,IR = tmp[key]
+
+            
+
+            lvls = 5
+
+            # cA,cD = pywt.dwt(IR, 'dmey','zero')
+
+            #scales = np.arange(1,128)
+            #res = pywt.cwt(IR, scales, 'gaus1')
+            #local_data[f"{room}_{key}_cwt"] = res
+
+            local_data[f"{room}_{key}_cA"] = normalize(IR)
+            local_data[f"{room}_{key}_cD"] = normalize(IR)
+            
+            
+            
+    
+    return local_data
+
+#Measures distance metrics between two signals or data.
+def distance_compare(x,y,use_fft=True):
+    from scipy.spatial.distance import correlation,cosine,euclidean
+    from scipy.fft import fft, fftfreq, ifft, rfft, irfft
+
+
+    if not use_fft:
+        
+        d1 = correlation(x,y)
+        d2 = cosine(x,y)
+        d3 = euclidean(x,y)
+        return d1,d2,d3,1
+    else:
+        x = abs(fft(x))
+        y = abs(fft(y))
+        d1 = correlation(x,y)
+        d2 = cosine(x,y)
+        d3 = euclidean(x,y)
+        return d1,d2,d3,1
+
+
+def distance_compare_windows(x,y,use_fft=False,window_len=100):
+    from scipy.spatial.distance import correlation,cosine,euclidean
+    from scipy.fft import fft, fftfreq, ifft, rfft, irfft
+
+    x_split = np.array_split(x,window_len)[:-1]
+    y_split = np.array_split(y,window_len)[:-1]
+    if not use_fft:
+        d1 = 0
+        d2 = 0
+        d3 = 0
+        dh = 0
+        for i in range(0,window_len-1):
+            x = x_split[i]
+            y = y_split[i]
+
+            from teaspoon.SP.tsa_tools import takens
+
+            embedded_ts_x = takens(x, n = 2, tau = 15)
+            embedded_ts_y = takens(y, n = 2, tau = 15)
+
+            from ripser import ripser
+            #calculate the rips filtration persistent homology
+            result_x = ripser(embedded_ts_x, maxdim=1)
+            result_y = ripser(embedded_ts_y, maxdim=1)
+
+            diagram_x = result_x['dgms']
+            diagram_y = result_y['dgms']
+
+
+            B, D = diagram_x[1].T[0], diagram_x[1].T[1]
+            L_x = D - B 
+
+            B, D = diagram_y[1].T[0], diagram_y[1].T[1]
+            L_y = D - B
+
+            from teaspoon.SP.information.entropy import PersistentEntropy
+            h_x = PersistentEntropy(lifetimes = L_x)
+            h_y = PersistentEntropy(lifetimes = L_y)   
+
+            d1 += correlation(x,y)
+            d2 += cosine(x,y)
+            d3 += euclidean(x,y)
+            dh += (h_x-h_y)
+        return d1/(window_len-1),d2/(window_len-1),d3/(window_len-1),dh/(window_len-1)
+    else:
+        x = abs(fft(x))
+        y = abs(fft(y))
+        d1 = correlation(x,y)
+        d2 = cosine(x,y)
+        d3 = euclidean(x,y)
+        return d1,d2,d3,1

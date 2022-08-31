@@ -51,7 +51,7 @@ def bit_agreement_windowed_means(a,b,window_size=10):
     return agreement
 
 
-def bit_agreement_windowed_rms(a,b,window_size=10):
+def bit_agreement_windowed_rms(a,b,window_size=100):
     m1 = np.sqrt(np.mean(a**2))
     m2 = np.sqrt(np.mean(b**2))
     bs1 = ""
@@ -74,8 +74,6 @@ def bit_agreement_windowed_rms(a,b,window_size=10):
             break
 
     matching = 0
-    print(bs1)
-    print(bs2)
     for i in range(len(bs1)):
         ch1 = bs1[i]
         ch2 = bs2[i]
@@ -172,8 +170,7 @@ def integral_bit_agreement(x,y,start=100,end=200):
         else:
             bs2+="0"
 
-    print(bs1)
-    print(bs2)
+
     matching = 0
     for i in range(len(bs1)):
         if bs1[i] == bs2[i]:
@@ -188,7 +185,7 @@ def base_sine_wave(x):
 def bit_agreement_cosine_distance(x,y,base_wave,step=10):
     from scipy.spatial.distance import cosine
     from sklearn.metrics.pairwise import cosine_similarity,cosine_distances
-
+    
     bs1 = ""
     bs2 = ""
    
@@ -219,7 +216,7 @@ def bit_agreement_cosine_distance(x,y,base_wave,step=10):
     if bs1 == '' or bs2 == '':
         return 0
     else:
-        print(bin(int(bs1,2) ^ int(bs2,2)))
+        pass #rint(bin(int(bs1,2) ^ int(bs2,2)))
 
     agreement = matching/len(bs1)
     return agreement
@@ -242,7 +239,7 @@ def create_bit_streams_audio(x1,window_len=10000, bands=1000):
         else:
             x[i:i+window_len-1] = x[i:i+window_len-1] * wind
 
-        FFTs.append(abs(rfft(x[i:i+window_len-1])))
+        FFTs.append(abs(fft(x[i:i+window_len-1])))
  
   
     E = {}
@@ -256,7 +253,6 @@ def create_bit_streams_audio(x1,window_len=10000, bands=1000):
     bs = ""
     for i in range(1,len(FFTs)):
         for j in range(0,len(bands_lst[i])-1):
-            
             if E[(i,j)] -E[(i,j+1)] - (E[(i-1,j)] - E[(i-1,j+1)]) > 0:
                 bs+= "1"
             else:
@@ -273,6 +269,10 @@ def bit_agreement_ambient_audio_scheme(x,y,window_len=100, bands=10):
 
     matching = 0
     for i in range(0,len(bs1)):
+
+        if i >= len(bs1) or i >= len(bs2):
+            return 0
+
         if bs1[i] == bs2[i]:
             matching+=1
     
@@ -284,7 +284,7 @@ def bit_agreement_ambient_audio_scheme(x,y,window_len=100, bands=10):
     if bs1 == '' or bs2 == '':
         return 0
     else:
-        print(bin(int(bs1,2) ^ int(bs2,2)))
+        pass #print(bin(int(bs1,2) ^ int(bs2,2)))
     
     return agreement
 
@@ -318,7 +318,6 @@ def create_bit_streams_wavelet_transform(x,window_len):
             all_values.append(ind1)
             bs1+= '{0:08b}'.format(ind1)
     
-    print(bs1)
 
     all_values = np.array(all_values)
     return (bs1,all_values,all_polys_A,all_polys_D)
@@ -401,14 +400,14 @@ def quam_bit_generation_1d(X):
 
     return bs1
 
-def quam_bit_agreement(x,y):
+def quam_bit_agreement(x,y,window=5):
     from scipy.fft import fft, fftfreq, ifft, rfft, irfft
 
     X = rfft(x)
     Y = rfft(y)
 
-    bs1 = quam_bit_generation(X)
-    bs2 = quam_bit_generation(Y)
+    bs1 = quam_bit_generation(X,window=window)
+    bs2 = quam_bit_generation(Y,window=window)
 
     # bs1 = quam_bit_generation_1d(abs(X))
     # bs2 = quam_bit_generation_1d(abs(Y))
@@ -434,7 +433,9 @@ def quam_bit_agreement(x,y):
     if bs1 == '' or bs2 == '':
         return 0
     else:
-        print(bin(int(bs1,2) ^ int(bs2,2)))
+        #print(bin(int(bs1,2) ^ int(bs2,2)))
+        pass
     
     
     return agreement
+
