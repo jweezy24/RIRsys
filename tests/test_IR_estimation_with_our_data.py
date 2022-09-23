@@ -64,7 +64,6 @@ class Test_IR_Algorithms(unittest.TestCase):
         IR_est_3 = estimate_IR_deconvolution(r3,orig)
 
 
-
         data["IR_est_decon_1"] = IR_est_1
         data["IR_est_decon_2"] = IR_est_2
         data["IR_est_decon_3"] = IR_est_3
@@ -103,7 +102,6 @@ class Test_IR_Algorithms(unittest.TestCase):
         IR_est_3 = estimate_IR_power_spectrum(r3,orig)
 
 
-
         data["IR_est_power_1"] = IR_est_1
         data["IR_est_power_2"] = IR_est_2
         data["IR_est_power_3"] = IR_est_3
@@ -139,11 +137,10 @@ class Test_IR_Algorithms(unittest.TestCase):
         IR_est_2 = estimate_IR_iterative_filtering(orig,r2)
         IR_est_3 = estimate_IR_iterative_filtering(orig,r3)
 
-
-
         data["IR_est_wind_1"] = IR_est_1
         data["IR_est_wind_2"] = IR_est_2
         data["IR_est_wind_3"] = IR_est_3
+
 
 def suite():
     suite = unittest.TestSuite()
@@ -154,7 +151,7 @@ def suite():
     # suite.addTest(Test_IR_Algorithms('test_eval_kronecker_product'))
     return suite
 
-def plot_all_test(tests,plot_ffts=True,windowed_cosine_distance=False):
+def plot_all_test(tests,plot_ffts=False,windowed_cosine_distance=False):
     
     import matplotlib.pyplot as plt
     fig, axs = plt.subplots(nrows=len(tests), ncols=5, figsize=(18, 5))
@@ -246,12 +243,13 @@ def plot_all_test(tests,plot_ffts=True,windowed_cosine_distance=False):
 
 def compare_bit_streams(tests):
     import matplotlib.pyplot as plt
-    tests = ["wind"]
-    fig, (ax1,ax2,ax3) = plt.subplots(nrows=1, ncols=3, figsize=(18, 5))
+    
+    fig, axs = plt.subplots(nrows=len(tests), ncols=3, figsize=(18, 5))
     count = 0
     public_audio = get_raw_audio_stream("/home/jweezy/Documents/ambient_audio_experiments/audio_dataset/Isaac_data/white_noise_10.wav")[1]
 
-    for i in tests:
+    for ind in range(len(tests)):
+        i = tests[ind]
         # IR_est_1 =  convolution( public_audio, data[f"IR_est_{i}_1"])
         # IR_est_2 =  convolution( public_audio, data[f"IR_est_{i}_2"])
         # IR_est_3 =  convolution( public_audio, data[f"IR_est_{i}_3"])
@@ -267,9 +265,9 @@ def compare_bit_streams(tests):
         # bw = base_sine_wave(np.arange(0,len(IR_est_1)))
         bw = public_audio[:len(IR_est_1)]
 
-        agreement_11 = bit_agreement_cosine_distance(IR_est_1,IR_est_2,bw)
-        agreement_21 = bit_agreement_cosine_distance(IR_est_1,IR_est_3,bw)
-        agreement_31 = bit_agreement_cosine_distance(IR_est_3,IR_est_2,bw)
+        agreement_11 = 0#bit_agreement_cosine_distance(IR_est_1,IR_est_2,bw)
+        agreement_21 = 0#bit_agreement_cosine_distance(IR_est_1,IR_est_3,bw)
+        agreement_31 = 0#bit_agreement_cosine_distance(IR_est_3,IR_est_2,bw)
 
         agreement_12 = bit_agreement_ambient_audio_scheme(IR_est_1,IR_est_2)
         agreement_22 = bit_agreement_ambient_audio_scheme(IR_est_1,IR_est_3)
@@ -282,13 +280,13 @@ def compare_bit_streams(tests):
         
         y = [agreement_11,agreement_21,agreement_31]
         x = [1,2,3]
-        ax1.bar(x,y)
+        axs[ind][0].bar(x,y)
         y = [agreement_12,agreement_22,agreement_32]
         x = [1,2,3]
-        ax2.bar(x,y)
+        axs[ind][1].bar(x,y)
         y = [agreement_13,agreement_23,agreement_33]
         x = [1,2,3]
-        ax3.bar(x,y)
+        axs[ind][2].bar(x,y)
         count+=1
 
 
@@ -312,6 +310,7 @@ if __name__ == '__main__':
 
     tests = ["decon", "decon_w","power","wind"]
     plot_all_test(tests)
+    tests = ["decon", "decon_w","power","wind"]
     compare_bit_streams(tests)
 
 

@@ -3,15 +3,16 @@ import scipy
 import scipy.signal
 import pywt
 
-def bit_agreement_windowed_means(a,b,window_size=10):
+def bit_agreement_windowed_means(a,b,window_size=100):
     m1 = a.mean()
     m2 = b.mean()
     bs1 = ""
     bs2 = ""
     for i in range(len(a)):
         if i*window_size < len(a):
-            window1 = a[i*window_size: i*window_size+window_size]
-            window2 = b[i*window_size: i*window_size+window_size]
+            window1 = a[i*window_size: i*window_size+window_size-1]
+            window2 = b[i*window_size: i*window_size+window_size-1]
+            # print(m1,window1.mean())
             if window1.mean() > m1:
                 bs1+="1"
             else:
@@ -47,7 +48,7 @@ def bit_agreement_windowed_means(a,b,window_size=10):
             matching+=1
         count+=1
     agreement = matching/count
-
+    # print(len(bs1),bs1)
     return agreement
 
 
@@ -182,7 +183,7 @@ def integral_bit_agreement(x,y,start=100,end=200):
 def base_sine_wave(x):
     return np.sin(x) + np.random.normal(scale=0.1, size=len(x))
 
-def bit_agreement_cosine_distance(x,y,base_wave,step=10):
+def bit_agreement_cosine_distance(x,y,base_wave,step=100):
     from scipy.spatial.distance import cosine
     from sklearn.metrics.pairwise import cosine_similarity,cosine_distances
     
@@ -260,7 +261,7 @@ def create_bit_streams_audio(x1,window_len=10000, bands=1000):
     
     return bs
 
-def bit_agreement_ambient_audio_scheme(x,y,window_len=100, bands=10):
+def bit_agreement_ambient_audio_scheme(x,y,window_len=100, bands=20):
     FFTs = []
     from scipy.fft import fft, fftfreq, ifft, rfft, irfft
 
@@ -400,7 +401,7 @@ def quam_bit_generation_1d(X):
 
     return bs1
 
-def quam_bit_agreement(x,y,window=5):
+def quam_bit_agreement(x,y,window=100):
     from scipy.fft import fft, fftfreq, ifft, rfft, irfft
 
     X = rfft(x)
@@ -422,6 +423,8 @@ def quam_bit_agreement(x,y,window=5):
         if b1 == b2:
             matching+=1
     
+    if len(bs1) == 0:
+        return 0
     agreement = matching/len(bs1)
 
 

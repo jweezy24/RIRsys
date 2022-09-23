@@ -368,7 +368,7 @@ def compute_correlation_function(x, y):
 
 def build_Henk_matrix(data):
     from scipy.linalg import hankel
-    return hankel(data)
+    return hankel(data,data)
 
 def impulse_response_estimation(y,x, T=3, Tr=2, fs=48000,n=100):
     import scipy.signal as sig
